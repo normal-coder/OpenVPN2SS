@@ -1,0 +1,19 @@
+version: "3"
+services:
+  openvpn-client:
+    container_name: openvpn-client
+    image: normalcoder/openvpn2ss:latest
+    privileged: true
+    dns:
+      - 10.8.0.1
+    devices:
+      - "/dev/net/tun:/dev/net/tun"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:5162:5162"
+    volumes:
+      - ./config/openvpn:/etc/openvpn-config
+      - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json
+      - ./logs:/var/log/custom
