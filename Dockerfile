@@ -1,5 +1,8 @@
 FROM alpine:latest
 
+LABEL org.opencontainers.image.source=https://github.com/normal-coder/openvpn2ss
+LABEL org.opencontainers.image.description="OpenVPN2SS"
+LABEL org.opencontainers.image.licenses=AGPL-3.0
 LABEL maintainer="诺墨 <normal@normalcoder.com>"
 
 RUN apk update && \
