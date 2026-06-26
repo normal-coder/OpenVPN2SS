@@ -3,7 +3,7 @@
     "server_port": 5162,
     "local_address": "127.0.0.1",
     "local_port": 5162,
-    "password": "asTGjzD3E8h",
+    "password": "__SS_PASSWORD__",
     "timeout": 300,
     "method": "aes-256-gcm"
 }

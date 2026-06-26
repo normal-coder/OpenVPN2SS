@@ -13,6 +13,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "127.0.0.1:5162:5162"
+    environment:
+      # Set your Shadowsocks password here or via: export SS_PASSWORD=your_password
+      - SS_PASSWORD=${SS_PASSWORD}
     volumes:
       - ./config/openvpn:/etc/openvpn-config
       - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json
