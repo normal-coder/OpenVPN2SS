@@ -51,7 +51,11 @@ OpenVPN2SS 基于 `Docker` 设计，支持一键 `docker compose up -d` 运行�
 
 ### 二、SSServer 服务端配置
 
-在 `config/shadowsocks` 目录下，默认仅需修改 `shadowsocks.json` 文件中的 `password` 字段，其他字段可保持不变。
+通过 `SS_PASSWORD` 环境变量设置 Shadowsocks 连接密码。可以在启动前导出环境变量，或在 `docker-compose.yml` 的 `.env` 文件中配置：
+
+```bash
+export SS_PASSWORD=your_password_here
+```
 
 > 默认配置中采用 `aes-256-gcm` 认证加密算法，在容器内开放 5162 端口，并通过 Docker 对外暴露（依然是 5162 端口不变）。
 
