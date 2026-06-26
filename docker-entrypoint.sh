@@ -21,4 +21,20 @@ if [ -z "$SS_PASSWORD" ]; then
 fi
 sed -i "s/__SS_PASSWORD__/$SS_PASSWORD/g" /etc/shadowsocks.json
 
-ssserver -c /etc/shadowsocks.json
+# Start ssserver in background
+ssserver -c /etc/shadowsocks.json &
+SS_PID=$!
+
+# Monitor: exit if either process dies
+while true; do
+    if ! kill -0 $SS_PID 2>/dev/null; then
+        echo "ERROR: ssserver exited" >&2
+        exit 1
+    fi
+    if ! pgrep openvpn >/dev/null; then
+        echo "ERROR: openvpn exited" >&2
+        kill $SS_PID 2>/dev/null
+        exit 1
+    fi
+    sleep 5
+done

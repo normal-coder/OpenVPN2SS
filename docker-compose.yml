@@ -16,6 +16,13 @@ services:
     environment:
       # Set your Shadowsocks password here or via: export SS_PASSWORD=your_password
       - SS_PASSWORD=${SS_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "5162"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 70s
     volumes:
       - ./config/openvpn:/etc/openvpn-config
       - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json
