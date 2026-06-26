@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.licenses=AGPL-3.0
 LABEL maintainer="诺墨 <normal@normalcoder.com>"
 
 RUN apk update && \
-    apk add --no-cache openvpn openssl libssl1.1 && \
+    apk add --no-cache openvpn openssl && \
     rm -rf /var/cache/apk/*
 
 RUN set -ex ; \
@@ -17,7 +17,7 @@ RUN set -ex ; \
     aarch64) ssArch='aarch64-unknown-linux-musl' ;; \
     *) echo >&2 "error: unsupported architecture ($apkArch)"; exit 1 ;;\
     esac ; \
-    wget -O shadowsocks.tar.xz "https://github.com/shadowsocks/shadowsocks-rust/releases/download/v1.17.0/shadowsocks-v1.17.0.${ssArch}.tar.xz" ; \
+    wget -O shadowsocks.tar.xz "https://github.com/shadowsocks/shadowsocks-rust/releases/download/v1.24.0/shadowsocks-v1.24.0.${ssArch}.tar.xz" ; \
     tar -xvJf shadowsocks.tar.xz ; \
     chmod +x ssserver ; \
     mv ssserver /usr/local/bin/ssserver ; \
