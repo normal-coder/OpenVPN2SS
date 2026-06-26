@@ -1,6 +1,18 @@
 #!/bin/sh
 nohup openvpn --config /etc/openvpn-config/openvpn.ovpn --askpass /etc/openvpn-config/pass.txt >>/var/log/custom/ovpn.log &
-sleep 8
+
+# Wait for VPN tunnel to be ready (check tun0 device)
+TIMEOUT=60
+ELAPSED=0
+while [ ! -d /sys/class/net/tun0 ]; do
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+        echo "ERROR: VPN tunnel not established within ${TIMEOUT}s" >&2
+        exit 1
+    fi
+    sleep 1
+    ELAPSED=$((ELAPSED + 1))
+done
+echo "VPN tunnel established (${ELAPSED}s)"
 
 # Replace SS password placeholder with environment variable
 if [ -z "$SS_PASSWORD" ]; then
