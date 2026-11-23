@@ -1,7 +1,6 @@
-version: "3"
 services:
   openvpn-client:
-    container_name: openvpn-client
+    container_name: ${CONTAINER_NAME:-openvpn-client}
     image: normalcoder/openvpn2ss:latest
     privileged: true
     dns:
@@ -12,18 +11,18 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "127.0.0.1:5162:5162"
+      - "127.0.0.1:${SS_PORT:-5162}:5162"
     environment:
-      # Set your Shadowsocks password here or via: export SS_PASSWORD=your_password
-      - SS_PASSWORD=${SS_PASSWORD}
+      - SS_PASSWORD=${SS_PASSWORD:-}
+      - VPN_READY_TIMEOUT=${VPN_READY_TIMEOUT:-60}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "nc", "-z", "127.0.0.1", "5162"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5162 && pgrep openvpn >/dev/null"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 70s
     volumes:
       - ./config/openvpn:/etc/openvpn-config
-      - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json
+      - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json:ro
       - ./logs:/var/log/custom
