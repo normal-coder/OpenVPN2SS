@@ -1,7 +1,7 @@
 services:
   openvpn-client:
     container_name: ${NAME_PREFIX:-openvpn}-client
-    image: normalcoder/openvpn2ss:latest
+    image: ${IMAGE_NAME:-normalcoder/openvpn2ss:latest}
     privileged: true
     devices:
       - "/dev/net/tun:/dev/net/tun"
@@ -12,6 +12,9 @@ services:
       - "127.0.0.1:${SS_PORT:-5162}:5162"
     environment:
       - SS_PASSWORD=${SS_PASSWORD:-}
+      - SS_METHOD=${SS_METHOD:-aes-256-gcm}
+      - VPN_PASSWORD=${VPN_PASSWORD:-}
+      - VPN_USERNAME=${VPN_USERNAME:-}
       - VPN_READY_TIMEOUT=${VPN_READY_TIMEOUT:-60}
       - ENABLE_DNSMASQ=${ENABLE_DNSMASQ:-true}
       - DNS_SERVERS=${DNS_SERVERS:-}
@@ -24,7 +27,6 @@ services:
       retries: 3
       start_period: 70s
     volumes:
-      - ./config/openvpn:/etc/openvpn-config
-      - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json:ro
-      - ./config/dnsmasq.d:/etc/dnsmasq.d:ro
-      - ./logs:/var/log/custom
+      - ${OVPN_CONFIG_DIR:-./config/openvpn}:/etc/openvpn-config
+      - ${DNS_CONFIG_DIR:-./config/dnsmasq.d}:/etc/dnsmasq.d:ro
+      - ${LOG_DIR:-./logs}:/var/log/custom
