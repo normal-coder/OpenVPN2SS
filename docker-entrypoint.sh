@@ -153,15 +153,20 @@ if [ "$ENABLE_DNSMASQ" = "true" ]; then
     echo "nameserver 127.0.0.1" > /etc/resolv.conf
 fi
 
-# Prepare Shadowsocks server command
-set -- ssserver -c /etc/shadowsocks.json
-
+# Prepare Shadowsocks configuration
+FINAL_CONFIG="$STATE_DIR/shadowsocks.json"
 if [ -n "${SS_PASSWORD:-}" ]; then
-    set -- "$@" --password "$SS_PASSWORD"
-elif grep -q '__SS_PASSWORD__' /etc/shadowsocks.json 2>/dev/null; then
+    awk -v p="$SS_PASSWORD" '{gsub(/__SS_PASSWORD__/, p); print}' /etc/shadowsocks.json > "$FINAL_CONFIG"
+else
+    cp /etc/shadowsocks.json "$FINAL_CONFIG"
+fi
+
+if grep -q '__SS_PASSWORD__' "$FINAL_CONFIG" 2>/dev/null; then
     echo "ERROR: SS_PASSWORD environment variable is not set and /etc/shadowsocks.json contains '__SS_PASSWORD__'" >&2
     exit 1
 fi
+
+set -- ssserver -c "$FINAL_CONFIG"
 
 echo "Starting Shadowsocks server..."
 "$@" &
