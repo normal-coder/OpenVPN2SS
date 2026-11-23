@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.licenses=AGPL-3.0
 LABEL maintainer="诺墨 <normal@normalcoder.com>"
 
 RUN apk update && \
-    apk add --no-cache openvpn openssl && \
+    apk add --no-cache openvpn openssl dnsmasq && \
     rm -rf /var/cache/apk/*
 
 RUN set -ex ; \
@@ -27,7 +27,7 @@ RUN mkdir -p /dev/net && \
     mknod /dev/net/tun c 10 200 && \
     chmod 600 /dev/net/tun
 
-RUN mkdir -p /var/log/custom
+RUN mkdir -p /var/log/custom /etc/dnsmasq.d
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

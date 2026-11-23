@@ -3,8 +3,6 @@ services:
     container_name: ${CONTAINER_NAME:-openvpn-client}
     image: normalcoder/openvpn2ss:latest
     privileged: true
-    dns:
-      - 10.8.0.1
     devices:
       - "/dev/net/tun:/dev/net/tun"
     build:
@@ -15,6 +13,9 @@ services:
     environment:
       - SS_PASSWORD=${SS_PASSWORD:-}
       - VPN_READY_TIMEOUT=${VPN_READY_TIMEOUT:-60}
+      - ENABLE_DNSMASQ=${ENABLE_DNSMASQ:-true}
+      - DNS_SERVERS=${DNS_SERVERS:-}
+      - DNS_FALLBACK=${DNS_FALLBACK:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 5162 && pgrep openvpn >/dev/null"]
@@ -25,4 +26,5 @@ services:
     volumes:
       - ./config/openvpn:/etc/openvpn-config
       - ./config/shadowsocks/shadowsocks.json:/etc/shadowsocks.json:ro
+      - ./config/dnsmasq.d:/etc/dnsmasq.d:ro
       - ./logs:/var/log/custom
