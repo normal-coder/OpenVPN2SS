@@ -1,5 +1,5 @@
 config/openvpn/
 logs/
-config/shadowsocks/shadowsocks.json
+config/shadowsocks.json
 .env
 config/dnsmasq.d/*.conf

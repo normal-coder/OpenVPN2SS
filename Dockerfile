@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.licenses=AGPL-3.0
 LABEL maintainer="诺墨 <normal@normalcoder.com>"
 
 RUN apk update && \
-    apk add --no-cache openvpn openssl dnsmasq && \
+    apk add --no-cache openvpn openssl dnsmasq curl && \
     rm -rf /var/cache/apk/*
 
 RUN set -ex ; \
@@ -29,6 +29,7 @@ RUN mkdir -p /dev/net && \
 
 RUN mkdir -p /var/log/custom /etc/dnsmasq.d
 
+COPY config/shadowsocks.json.example /etc/shadowsocks.json
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["docker-entrypoint.sh"]
