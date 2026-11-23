@@ -6,8 +6,6 @@
 
 OpenVPN2SS 将 OpenVPN 客户端通过 SSServer 转化为 `ss://` 协议。通过将不同的 OpenVPN 链路封装在独立的 Docker 容器中暴露不同的本地 SS 端口，并由 Clash/Surge 等网络工具做域名分流，可彻底解决 DNS 抢占及多套网络频繁切换的问题。
 
----
-
 ## 目录结构
 
 ```bash
@@ -33,13 +31,11 @@ OpenVPN2SS 将 OpenVPN 客户端通过 SSServer 转化为 `ss://` 协议。通�
 └── README.md
 ```
 
----
-
 ## 快速使用
 
-OpenVPN2SS 基于 `Docker` 设计，支持一键 `docker compose up -d` 运行。运行前请预先准备 **OpenVPN 认证文件** 与 **环境变量**。
+OpenVPN2SS 基于 Docker 设计，支持一键 `docker compose up -d` 运行。运行前请预先准备 **OpenVPN 认证文件** 与 **环境变量**。
 
-### 一、OpenVPN 认证配置
+### OpenVPN 认证配置
 
 请将你的 OpenVPN 连接所需文件放入 `config/openvpn/` 目录中：
 
@@ -52,11 +48,9 @@ OpenVPN2SS 基于 `Docker` 设计，支持一键 `docker compose up -d` 运行�
 | `user.crt`     | 客户端公钥证书文件。                                                                       |
 | `user.key`     | 客户端私钥证书文件。                                                                       |
 
-> **提示**：如果某些内网特定 IP 不在 VPN 服务端默认推送的子网路由中，请在 `openvpn.ovpn` 中添加对应路由指令（例如 `route 192.0.2.10 255.255.255.255`），由 OpenVPN 建链时自动挂载，无需手动执行 `ip route`。
+> **提示**：如果某些内网特定 IP 不在 VPN 服务端默认推送的子网路由中，请在 `openvpn.ovpn` 中添加对应路由指令（例如 `route 192.0.2.10 255.255.255.255`），由 OpenVPN 建链时自动下发，无需手动执行 `ip route`。
 
----
-
-### 二、环境变量与密码配置
+### 环境变量与密码配置
 
 复制环境变量模板：
 
@@ -73,8 +67,8 @@ SS_PASSWORD=your_secure_password
 # 宿主机映射端口（容器内固定 5162）
 SS_PORT=5162
 
-# 容器名称（多实例部署时按需修改）
-CONTAINER_NAME=openvpn-client
+# 容器名前缀（默认 openvpn，生成容器名 ${NAME_PREFIX}-client）
+NAME_PREFIX=openvpn
 
 # OpenVPN 链路建立超时时间（秒，默认 60）
 VPN_READY_TIMEOUT=60
@@ -91,15 +85,14 @@ ENABLE_DNSMASQ=true
 
 > **密码注入说明**：容器启动时会通过 `ssserver --password` 命令行参数安全注入密码，无需修改挂载的配置文件，避免了在 Docker bind-mount 下修改挂载文件导致的 `Resource busy` 错误。
 
----
+### DNS 解析与接管模式
 
-### 三、DNS 解析与接管模式
-
-Linux 下 OpenVPN CLI 默认不会主动修改系统的 `/etc/resolv.conf`。而在容器编排中，如果直接在 compose 里静态配置 `dns: [10.8.0.1]`，一旦 OpenVPN 的 `remote` 服务器是域名，就会因无法预先解析 remote 域名而导致死锁断网。
+Linux 下 OpenVPN CLI 默认不会主动修改系统的 `/etc/resolv.conf`。而在容器编排中，如果直接在 compose 里静态配置内网 DNS，一旦 OpenVPN 的 `remote` 服务器是域名，就会因无法预先解析 remote 域名而导致死锁断网。
 
 为此，OpenVPN2SS 支持两种 DNS 解析机制：
 
-#### 1. dnsmasq 模式（推荐，`ENABLE_DNSMASQ=true`）
+#### dnsmasq 模式（推荐，`ENABLE_DNSMASQ=true`）
+
 * **自动捕获服务端 CoreDNS / 内网 DNS**：容器在后台监听 OpenVPN 日志，捕获到 `PUSH_REPLY,dhcp-option DNS ...` 后自动将其作为 dnsmasq 的上游，隧道重连时自动热重载上游记录。
 * **隔离与防死锁**：OpenVPN 进程自身连接远程服务端始终走 Docker 宿主网络解析；只有 `ssserver` 及应用流量通过内部 `127.0.0.1:53` 解析，彻底避免死锁。
 * **自定义泛域名解析与 Split-DNS**：
@@ -114,18 +107,18 @@ Linux 下 OpenVPN CLI 默认不会主动修改系统的 `/etc/resolv.conf`。而
 * **单主机映射支持**：可在 `docker-compose.yml` 中继续使用原生的 `extra_hosts`，dnsmasq 会自动读取容器内 `/etc/hosts`。
 * **公共 DNS 兜底**：可通过 `DNS_FALLBACK` 配置公网 DNS，防止内网 DNS 未覆盖公网域名时解析彻底瘫痪。
 
-#### 2. 系统解析模式（`ENABLE_DNSMASQ=false`）
+#### 系统解析模式（`ENABLE_DNSMASQ=false`）
+
 关闭内置 dnsmasq，容器直接使用 Docker 或 compose 配置的系统 DNS 解析，适合最简单的纯内网 IP 场景。
 
----
-
-### 四、启动与运行
+### 启动与运行
 
 ```bash
 docker compose up -d
 ```
 
 #### 启动就绪时序判定
+
 容器启动时具有健壮的启动顺序保证与 Fail-fast 机制：
 1. 启动日志监听流并拉起 OpenVPN。
 2. 持续检测 OpenVPN 是否输出 `Initialization Sequence Completed`（表明隧道与路由均已正式安装完毕）。
@@ -142,28 +135,29 @@ docker compose logs -f
 tail -f logs/ovpn.log
 ```
 
----
-
-### 五、多实例部署指南（多套 VPN 容器分流）
+### 多实例部署指南（多套 VPN 容器分流）
 
 如果你有多套不同的 OpenVPN 网络环境需要同时在线，推荐使用多目录或多项目隔离的方式：
 
-1. **方式 A：通过独立目录隔离**
-   ```text
-   ~/docker/openvpn-company-a/  # SS_PORT=5162, CONTAINER_NAME=ovpn-a
-   ~/docker/openvpn-company-b/  # SS_PORT=5163, CONTAINER_NAME=ovpn-b
-   ```
-2. **方式 B：同目录通过环境变量与项目名隔离**
-   ```bash
-   # 启动节点 A
-   docker compose --env-file .env.node-a -p vpn-node-a up -d
-   # 启动节点 B
-   docker compose --env-file .env.node-b -p vpn-node-b up -d
-   ```
+**独立目录隔离**
 
----
+为不同环境建立独立目录，并在各自目录的 `.env` 中指定不同的端口与容器名前缀：
 
-### 六、客户端（Clash / Surge）接入配置
+```text
+~/docker/openvpn-company-a/  # SS_PORT=5162, NAME_PREFIX=company-a -> 容器名 company-a-client
+~/docker/openvpn-company-b/  # SS_PORT=5163, NAME_PREFIX=company-b -> 容器名 company-b-client
+```
+
+**单目录多项目隔离**
+
+在同一目录下，通过不同的环境文件和 compose 项目名直接拉起多个实例：
+
+```bash
+docker compose --env-file .env.node-a -p vpn-node-a up -d
+docker compose --env-file .env.node-b -p vpn-node-b up -d
+```
+
+### 客户端（Clash / Surge）接入配置
 
 接入需要使用支持 `ss://` 协议的网络工具，指向本地 `127.0.0.1` 对应的映射端口，使用 `aes-256-gcm` 算法与 `.env` 中设置的密码。
 

@@ -1,6 +1,6 @@
 services:
   openvpn-client:
-    container_name: ${CONTAINER_NAME:-openvpn-client}
+    container_name: ${NAME_PREFIX:-openvpn}-client
     image: normalcoder/openvpn2ss:latest
     privileged: true
     devices:
