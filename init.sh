@@ -32,6 +32,7 @@ download_if_missing() {
 
 download_if_missing "docker-compose.yml" "$REPO_RAW/docker-compose.yml"
 download_if_missing "Makefile" "$REPO_RAW/Makefile"
+download_if_missing ".env.example" "$REPO_RAW/.env.example"
 download_if_missing "config/dnsmasq.d/custom.conf.example" "$REPO_RAW/config/dnsmasq.d/custom.conf.example"
 download_if_missing "config/shadowsocks.json.example" "$REPO_RAW/config/shadowsocks.json.example"
 
@@ -77,7 +78,14 @@ else
     }
 
     ask_input "[?] 请输入 Project 分组名称 (OrbStack分组)" "$DIR_NAME" FINAL_PROJECT
-    ask_input "[?] 请输入 Service 服务名称" "openvpn" FINAL_SERVICE
+
+    # 智能联动：若自定义了 Project 分组（汇聚模式），Service 默认自动取当前目录名以防止服务冲突
+    if [ "$FINAL_PROJECT" != "$DIR_NAME" ]; then
+        DEF_SERVICE="${DIR_NAME}"
+    else
+        DEF_SERVICE="openvpn"
+    fi
+    ask_input "[?] 请输入 Service 服务名称" "$DEF_SERVICE" FINAL_SERVICE
     ask_input "[?] 请输入容器名称" "openvpn-${DIR_NAME}" FINAL_CONTAINER
     ask_input "[?] 请输入宿主机映射端口" "5162" FINAL_PORT
     ask_input "[?] 请输入 Shadowsocks 连接密码" "$DEFAULT_PASS" FINAL_PASS
@@ -88,29 +96,26 @@ else
         echo "    [配置] 已将 docker-compose.yml 服务名更新为: ${FINAL_SERVICE}"
     fi
 
-    cat <<EOF > .env
-# ==============================================================================
-# OpenVPN2SS 环境变量配置 (自动生成)
-# ==============================================================================
+    # 基于 .env.example 模板生成 .env 并精准注入交互配置
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        sed -e "s|^SS_PASSWORD=.*|SS_PASSWORD=${FINAL_PASS}|" \
+            -e "s|^SS_PORT=.*|SS_PORT=${FINAL_PORT}|" \
+            -e "s|^CONTAINER_NAME=.*|CONTAINER_NAME=${FINAL_CONTAINER}|" \
+            -e "s|^# COMPOSE_PROJECT_NAME=.*|COMPOSE_PROJECT_NAME=${FINAL_PROJECT}|" \
+            -e "s|^COMPOSE_PROJECT_NAME=.*|COMPOSE_PROJECT_NAME=${FINAL_PROJECT}|" \
+            .env > .env.tmp && mv .env.tmp .env
+    else
+        cat <<EOF > .env
 SS_PASSWORD=${FINAL_PASS}
 SS_PORT=${FINAL_PORT}
 CONTAINER_NAME=${FINAL_CONTAINER}
 COMPOSE_PROJECT_NAME=${FINAL_PROJECT}
-
-# --- 目录路径自定义 (可选，留空使用当前工程目录) ---
-# OVPN_CONFIG_DIR=./config/openvpn
-# DNS_CONFIG_DIR=./config/dnsmasq.d
-# LOG_DIR=./logs
-
-# --- OpenVPN 凭证 (可选，免创建密码文件直接在此填写) ---
-# VPN_PASSWORD=
-# VPN_USERNAME=
-
-# --- 高级网络选项 (选配) ---
 SS_METHOD=aes-256-gcm
-VPN_READY_TIMEOUT=60
 ENABLE_DNSMASQ=true
+VPN_READY_TIMEOUT=60
 EOF
+    fi
     echo "    [生成] .env 配置文件已就绪（容器名: ${FINAL_CONTAINER}，端口: ${FINAL_PORT}）"
 fi
 
