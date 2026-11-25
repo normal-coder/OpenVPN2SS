@@ -1,0 +1,35 @@
+# ==============================================================================
+# Docker Build Context 排除文件 (.dockerignore)
+# 确保本地任何私密配置、证书及日志绝对不会被送入构建上下文或镜像中
+# ==============================================================================
+
+# Git 版本控制元数据
+.git
+.gitignore
+
+# 环境变量与敏感配置
+.env
+.env.*
+!.env.example
+
+# OpenVPN 私密证书与密钥目录
+config/openvpn/
+
+# dnsmasq 私密自定义解析配置
+config/dnsmasq.d/*.conf
+!config/dnsmasq.d/*.example
+!config/dnsmasq.d/README.md
+
+# 自定义 Shadowsocks 配置文件
+config/shadowsocks.json
+
+# 运行日志
+logs/
+*.log
+*.prev
+
+# 说明文档与开发工具文件（减少构建上下文体积）
+README.md
+screenshot/
+Makefile
+init.sh
