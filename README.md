@@ -30,21 +30,17 @@ OpenVPN2SS 将 OpenVPN 客户端在独立的 Docker 容器中转化为本地 `ss
 
 ## 快速起步
 
-### 方式一：一键快速初始化 (推荐新手，无需完整 Clone 仓库)
+### 方式一：一键极速安装 (推荐)
 
-只需在空目录中运行一行安装脚本，即可自动拉取必要配置、创建目录并交互式配置密码端口：
+在目标目录运行安装脚本，自动拉取编排文件、创建目录并交互式完成配置：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/normal-coder/openvpn2ss/main/init.sh | bash
 ```
 
-脚本执行完成后，直接进入 [第 2 步：放入 VPN 文件](#2-放入-openvpn-配置文件) 即可。
+### 方式二：Git 源码部署
 
----
-
-### 方式二：Git 仓库部署
-
-#### 1. 克隆并初始化环境
+克隆仓库并初始化环境：
 
 ```bash
 git clone https://github.com/normal-coder/openvpn2ss.git
@@ -52,9 +48,7 @@ cd openvpn2ss
 cp .env.example .env
 ```
 
-编辑 `.env` 中的 `SS_PASSWORD` 与 `SS_PORT`。
-
-#### 2. 放入 OpenVPN 配置文件
+### 放入 OpenVPN 配置文件
 
 将你的 OpenVPN 连接所需文件直接放入 `config/openvpn/` 目录中。容器启动时会**自动自适应识别**：
 
@@ -66,15 +60,9 @@ cp .env.example .env
 
 > **约束提示**：单个容器实例承载一条 VPN 隧道，`config/openvpn/` 目录下请仅保留 1 个生效的 `*.ovpn` 配置文件。
 
-### 2. 环境变量配置
+### 环境变量参考 (.env)
 
-复制环境变量模板：
-
-```bash
-cp .env.example .env
-```
-
-编辑 `.env` 文件：
+编辑 `.env` 文件，按需微调核心参数：
 
 ```dotenv
 # Shadowsocks 连接密码（必填）
@@ -83,29 +71,31 @@ SS_PASSWORD=your_secure_password
 # 宿主机映射端口（容器内固定监听 5162，外部按需指定）
 SS_PORT=5162
 
-# OpenVPN 认证密码（可选，免创建密码文件）
+# OpenVPN 账号与密码（可选，免创建密码文件直接在此填写）
+# VPN_USERNAME=your_vpn_username
 # VPN_PASSWORD=your_vpn_password
 
-# 容器名前缀（默认 openvpn，多实例部署时用于区分）
-NAME_PREFIX=openvpn
+# 容器名称（默认 openvpn-client，多实例部署时建议根据业务命名）
+CONTAINER_NAME=openvpn-client
+
+# Project 分组名称（可选，用于控制 OrbStack / Docker 堆栈分组）
+# COMPOSE_PROJECT_NAME=openvpn
 
 # 是否启用内置 dnsmasq 解析器（推荐 true）
 ENABLE_DNSMASQ=true
 ```
 
-### 3. 一键启动
+### 启动与健康检查
 
 使用 Makefile 或原生 Docker Compose 启动：
 
 ```bash
-# 启动服务
+# 启动服务并在后台运行
 make up
 
-# 一键健康检查与诊断
+# 一键健康检查与综合体检
 make doctor
 ```
-
----
 
 ## 常用管理命令 (Makefile)
 
@@ -125,8 +115,6 @@ make doctor
 | `make doctor` | 一键进行健康体检（容器状态、tun0 网卡、端口监听与 DNS） |
 | `make shell` | 进入运行中的容器内部终端 |
 
----
-
 ## DNS 解析分工与自定义配置
 
 容器内置 dnsmasq 解析服务，分为三级解析链路：
@@ -138,8 +126,6 @@ make doctor
    # 将域名或泛域名直接指向特定内部 IP
    address=/service.internal.example.com/192.0.2.10
    ```
-
----
 
 ## 核心排查与避坑指南
 

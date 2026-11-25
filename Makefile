@@ -4,7 +4,7 @@
 # 环境与命令定义
 # ==============================================================================
 DOCKER_COMPOSE ?= docker compose
-CONTAINER_NAME ?= $(shell grep -E '^[[:space:]]*NAME_PREFIX=' .env 2>/dev/null | cut -d'=' -f2 | tr -d ' ' || echo "openvpn")-client
+CONTAINER_NAME ?= $(shell grep -E '^[[:space:]]*CONTAINER_NAME=' .env 2>/dev/null | cut -d'=' -f2 | tr -d ' ' || echo "openvpn-client")
 SS_PORT        ?= $(shell grep -E '^[[:space:]]*SS_PORT=' .env 2>/dev/null | cut -d'=' -f2 | tr -d ' ' || echo "5162")
 IMAGE_TAG      ?= normalcoder/openvpn2ss:v2.0.0
 

@@ -35,30 +35,57 @@ download_if_missing "Makefile" "$REPO_RAW/Makefile"
 download_if_missing "config/dnsmasq.d/custom.conf.example" "$REPO_RAW/config/dnsmasq.d/custom.conf.example"
 download_if_missing "config/shadowsocks.json.example" "$REPO_RAW/config/shadowsocks.json.example"
 
-# 3. 环境变量 (.env) 智能配置
+# 3. 环境变量 (.env) 与编排配置智能交互
 if [ -f ".env" ]; then
     echo "    [保留] .env 已存在，保留当前环境变量"
 else
     echo "--> 正在生成 .env 环境变量配置文件..."
+    DIR_NAME=$(basename "$PWD")
     DEFAULT_PASS=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 12 || echo "ss_$(date +%s)")
     
-    # 检测是否为交互式终端环境
-    if [ -t 0 ]; then
-        printf "请输入 Shadowsocks 连接密码 [回车默认随机密码: %s]: " "$DEFAULT_PASS"
-        read -r USER_PASS || USER_PASS=""
-        [ -n "$USER_PASS" ] && FINAL_PASS="$USER_PASS" || FINAL_PASS="$DEFAULT_PASS"
+    # 检测是否可交互（支持管道 curl ... | bash 模式下的 /dev/tty）
+    INTERACTIVE=false
+    TTY_DEV=""
+    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        INTERACTIVE=true
+        TTY_DEV="/dev/tty"
+    elif [ -t 0 ]; then
+        INTERACTIVE=true
+    fi
 
-        printf "请输入宿主机映射端口 [回车默认 5162]: "
-        read -r USER_PORT || USER_PORT=""
-        [ -n "$USER_PORT" ] && FINAL_PORT="$USER_PORT" || FINAL_PORT="5162"
+    ask_input() {
+        prompt="$1"
+        default_val="$2"
+        var_name="$3"
 
-        printf "请输入容器名前缀 [回车默认 openvpn]: "
-        read -r USER_PREFIX || USER_PREFIX=""
-        [ -n "$USER_PREFIX" ] && FINAL_PREFIX="$USER_PREFIX" || FINAL_PREFIX="openvpn"
-    else
-        FINAL_PASS="$DEFAULT_PASS"
-        FINAL_PORT="5162"
-        FINAL_PREFIX="openvpn"
+        if [ "$INTERACTIVE" = "true" ]; then
+            if [ -n "$TTY_DEV" ]; then
+                printf "%s [回车默认: %s]: " "$prompt" "$default_val" > "$TTY_DEV"
+                read -r user_val < "$TTY_DEV" || user_val=""
+            else
+                printf "%s [回车默认: %s]: " "$prompt" "$default_val"
+                read -r user_val || user_val=""
+            fi
+            if [ -n "$user_val" ]; then
+                eval "$var_name=\"\$user_val\""
+            else
+                eval "$var_name=\"\$default_val\""
+            fi
+        else
+            eval "$var_name=\"\$default_val\""
+        fi
+    }
+
+    ask_input "[?] 请输入 Project 分组名称 (OrbStack分组)" "$DIR_NAME" FINAL_PROJECT
+    ask_input "[?] 请输入 Service 服务名称" "openvpn" FINAL_SERVICE
+    ask_input "[?] 请输入容器名称" "openvpn-${DIR_NAME}" FINAL_CONTAINER
+    ask_input "[?] 请输入宿主机映射端口" "5162" FINAL_PORT
+    ask_input "[?] 请输入 Shadowsocks 连接密码" "$DEFAULT_PASS" FINAL_PASS
+
+    # 若用户自定义了 Service Name，跨平台安全更新 docker-compose.yml 对应的服务声明
+    if [ "$FINAL_SERVICE" != "openvpn" ] && [ -f "docker-compose.yml" ]; then
+        sed "s/^[[:space:]]*openvpn:/  ${FINAL_SERVICE}:/" docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+        echo "    [配置] 已将 docker-compose.yml 服务名更新为: ${FINAL_SERVICE}"
     fi
 
     cat <<EOF > .env
@@ -67,7 +94,8 @@ else
 # ==============================================================================
 SS_PASSWORD=${FINAL_PASS}
 SS_PORT=${FINAL_PORT}
-NAME_PREFIX=${FINAL_PREFIX}
+CONTAINER_NAME=${FINAL_CONTAINER}
+COMPOSE_PROJECT_NAME=${FINAL_PROJECT}
 
 # --- 目录路径自定义 (可选，留空使用当前工程目录) ---
 # OVPN_CONFIG_DIR=./config/openvpn
@@ -83,7 +111,7 @@ SS_METHOD=aes-256-gcm
 VPN_READY_TIMEOUT=60
 ENABLE_DNSMASQ=true
 EOF
-    echo "    [生成] .env 配置文件已就绪（密码: ${FINAL_PASS}，端口: ${FINAL_PORT}）"
+    echo "    [生成] .env 配置文件已就绪（容器名: ${FINAL_CONTAINER}，端口: ${FINAL_PORT}）"
 fi
 
 echo "=================================================================="

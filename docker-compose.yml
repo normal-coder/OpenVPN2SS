@@ -1,7 +1,7 @@
 services:
-  openvpn-client:
-    container_name: ${NAME_PREFIX:-openvpn}-client
-    image: ${IMAGE_NAME:-normalcoder/openvpn2ss:latest}
+  openvpn:
+    container_name: ${CONTAINER_NAME:-openvpn-client}
+    image: ${IMAGE_NAME:-normalcoder/openvpn2ss:v2.0.0}
     privileged: true
     devices:
       - "/dev/net/tun:/dev/net/tun"
